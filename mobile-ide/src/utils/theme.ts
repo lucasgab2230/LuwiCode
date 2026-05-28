@@ -1,4 +1,4 @@
-import { Theme } from '@app-types/index';
+import { Theme } from '@types/index';
 
 export const darkTheme: Theme = {
   dark: true,

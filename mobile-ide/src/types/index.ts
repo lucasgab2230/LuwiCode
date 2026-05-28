@@ -1,8 +1,3 @@
-import { Ionicons } from '@expo/vector-icons';
-import type { ComponentProps } from 'react';
-
-export type IoniconName = ComponentProps<typeof Ionicons>['name'];
-
 // Navigation types
 export type RootStackParamList = {
   Main: undefined;
@@ -31,23 +26,6 @@ export interface FileItem {
   children?: FileItem[];
 }
 
-export interface EditorSettings {
-  fontSize: number;
-  tabSize: number;
-  autoSave: boolean;
-  showLineNumbers: boolean;
-  wordWrap: boolean;
-}
-
-export interface AISettings {
-  enabled: boolean;
-  endpoint: string;
-  apiKey: string;
-  model: string;
-  temperature: number;
-  maxTokens: number;
-}
-
 export interface EditorState {
   currentFile: FileItem | null;
   files: FileItem[];
@@ -71,27 +49,11 @@ export interface TerminalLine {
   timestamp: number;
 }
 
-export interface GitState {
-  isTermuxAvailable: boolean;
-  isGitAvailable: boolean;
-  statusMessage: string;
-  lastCheckedAt: number | null;
-}
-
 export interface TermuxCommand {
   command: string;
   args?: string[];
   cwd?: string;
   env?: Record<string, string>;
-}
-
-export interface PersistedAppState {
-  isDarkMode: boolean;
-  files: FileItem[];
-  currentFilePath: string | null;
-  terminalSession: TerminalSession;
-  editorSettings: EditorSettings;
-  aiSettings: AISettings;
 }
 
 // Theme types

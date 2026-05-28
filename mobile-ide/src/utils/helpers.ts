@@ -1,4 +1,4 @@
-import { FileItem, TerminalSession, TerminalLine, EditorSettings, AISettings } from '@app-types/index';
+import { FileItem, TerminalSession, TerminalLine } from '@types/index';
 
 // Generate unique IDs
 export const generateId = (): string => {
@@ -111,23 +111,6 @@ export const createTerminalSession = (
     isActive: true,
   };
 };
-
-export const createDefaultEditorSettings = (): EditorSettings => ({
-  fontSize: 14,
-  tabSize: 2,
-  autoSave: true,
-  showLineNumbers: true,
-  wordWrap: false,
-});
-
-export const createDefaultAISettings = (): AISettings => ({
-  enabled: false,
-  endpoint: 'https://api.openai.com/v1',
-  apiKey: '',
-  model: 'gpt-4o-mini',
-  temperature: 0.2,
-  maxTokens: 512,
-});
 
 // Add line to terminal history
 export const addTerminalLine = (

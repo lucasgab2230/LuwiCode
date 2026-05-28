@@ -1,8 +1,7 @@
 {
-  "extends": "expo/tsconfig.base.json",
+  "extends": "expo/tsconfig.base",
   "compilerOptions": {
     "strict": true,
-    "ignoreDeprecations": "5.0",
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"],
@@ -10,7 +9,7 @@
       "@screens/*": ["src/screens/*"],
       "@hooks/*": ["src/hooks/*"],
       "@utils/*": ["src/utils/*"],
-      "@app-types/*": ["src/types/*"],
+      "@types/*": ["src/types/*"],
       "@assets/*": ["src/assets/*"]
     }
   },
