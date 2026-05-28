@@ -30,7 +30,8 @@ class TermuxService {
       return false;
     }
 
-    this.isGitAvailable = true;
+    const gitVersion = await this.executeGitCommand(['--version']);
+    this.isGitAvailable = !gitVersion.some(line => line.type === 'error' || line.content.toLowerCase().includes('command not found'));
     return this.isGitAvailable;
   }
 

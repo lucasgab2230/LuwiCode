@@ -37,7 +37,7 @@ const createDefaultFiles = (): FileItem[] => ([
     name: 'README.md',
     path: '/README.md',
     type: 'file',
-    content: '# LuwiCode\n\nA mobile code editor for Android with Termux and AI support.\n',
+    content: '# LuwiCode\n\nA mobile IDE for Android with Termux and AI support.\n',
     language: 'markdown',
     lastModified: Date.now(),
   },
@@ -79,6 +79,7 @@ export const loadAppState = async (): Promise<PersistedAppState> => {
     const contents = await FileSystem.readAsStringAsync(storageUri);
     const parsed = JSON.parse(contents) as Partial<PersistedAppState>;
     const defaults = createDefaultAppState();
+    const aiSettings = parsed.aiSettings ?? defaults.aiSettings;
 
     return {
       ...defaults,
@@ -86,7 +87,10 @@ export const loadAppState = async (): Promise<PersistedAppState> => {
       files: parsed.files?.length ? parsed.files : defaults.files,
       terminalSession: parsed.terminalSession ?? defaults.terminalSession,
       editorSettings: parsed.editorSettings ?? defaults.editorSettings,
-      aiSettings: parsed.aiSettings ?? defaults.aiSettings,
+      aiSettings: {
+        ...aiSettings,
+        apiKey: '',
+      },
     };
   } catch {
     return createDefaultAppState();
@@ -100,17 +104,15 @@ export const saveAppState = async (state: PersistedAppState): Promise<void> => {
     return;
   }
 
-  await FileSystem.writeAsStringAsync(storageUri, JSON.stringify(state, null, 2));
-};
+  const safeState: PersistedAppState = {
+    ...state,
+    aiSettings: {
+      ...state.aiSettings,
+      apiKey: '',
+    },
+  };
 
-export const buildFileContentMap = (files: FileItem[]): Record<string, string> => {
-  return files.reduce<Record<string, string>>((accumulator, file) => {
-    if (file.type === 'file') {
-      accumulator[file.path] = file.content ?? '';
-    }
-
-    return accumulator;
-  }, {});
+  await FileSystem.writeAsStringAsync(storageUri, JSON.stringify(safeState, null, 2));
 };
 
 export const findCurrentFile = (files: FileItem[], currentFilePath: string | null): FileItem | null => {

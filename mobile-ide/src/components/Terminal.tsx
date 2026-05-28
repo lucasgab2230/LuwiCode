@@ -20,6 +20,10 @@ interface TerminalProps {
   theme?: typeof darkTheme;
 }
 
+const TERMUX_HOME_PREFIX = /^\/data\/data\/com\.termux\/files\/home/;
+
+const formatTermuxPath = (path: string): string => path.replace(TERMUX_HOME_PREFIX, '~');
+
 export const Terminal: React.FC<TerminalProps> = ({
   session,
   onCommandExecute,
@@ -105,7 +109,7 @@ export const Terminal: React.FC<TerminalProps> = ({
           <View key={line.id} style={styles.line}>
             {line.type === 'input' && (
               <Text style={[styles.prompt, { color: theme.colors.terminalPrompt }]}>
-                {session.cwd.replace(/^\/data\/data\/com\.termux\/files\/home/, '~')} $ 
+                {formatTermuxPath(session.cwd)} $ 
               </Text>
             )}
             <Text
@@ -124,7 +128,7 @@ export const Terminal: React.FC<TerminalProps> = ({
       <View style={[styles.inputContainer, { borderTopColor: theme.colors.border }]}>
         <View style={[styles.promptContainer, { backgroundColor: theme.colors.surface }]}>
           <Text style={[styles.prompt, { color: theme.colors.terminalPrompt }]}>
-            {session.cwd.replace(/^\/data\/data\/com\.termux\/files\/home/, '~')} $ 
+            {formatTermuxPath(session.cwd)} $ 
           </Text>
           <TextInput
             ref={inputRef}
@@ -151,7 +155,7 @@ export const Terminal: React.FC<TerminalProps> = ({
           style={[styles.sendButton, { backgroundColor: theme.colors.primary }]}
           onPress={handleExecuteCommand}
         >
-          <Ionicons name="arrow-up" size={20} color={theme.colors.background} />
+          <Ionicons name="send" size={20} color={theme.colors.background} />
         </TouchableOpacity>
       </View>
 
@@ -181,7 +185,7 @@ export const Terminal: React.FC<TerminalProps> = ({
           <Text style={[styles.quickActionText, { color: theme.colors.secondary }]}>info</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.quickAction} onPress={() => inputRef.current?.focus()}>
-          <Ionicons name="key" size={16} color={theme.colors.secondary} />
+          <Ionicons name="keypad" size={16} color={theme.colors.secondary} />
           <Text style={[styles.quickActionText, { color: theme.colors.secondary }]}>focus</Text>
         </TouchableOpacity>
       </View>

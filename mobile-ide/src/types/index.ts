@@ -1,3 +1,8 @@
+import { Ionicons } from '@expo/vector-icons';
+import type { ComponentProps } from 'react';
+
+export type IoniconName = ComponentProps<typeof Ionicons>['name'];
+
 // Navigation types
 export type RootStackParamList = {
   Main: undefined;

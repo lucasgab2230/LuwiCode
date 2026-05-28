@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import { AISettings, EditorSettings, GitState } from '@app-types/index';
+import { AISettings, EditorSettings, GitState, IoniconName } from '@app-types/index';
 import { darkTheme, lightTheme } from '@utils/theme';
 
 interface SettingsProps {
@@ -61,7 +61,7 @@ export const Settings: React.FC<SettingsProps> = ({
   }, [aiSettings, onAiSettingsChange]);
 
   const SettingItem: React.FC<{
-    icon: React.ComponentProps<typeof Ionicons>['name'];
+    icon: IoniconName;
     title: string;
     description?: string;
     rightElement?: React.ReactNode;

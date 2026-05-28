@@ -2,15 +2,17 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View,
   TextInput,
+  NativeSyntheticEvent,
   ScrollView,
   TouchableOpacity,
   Text,
   StyleSheet,
   Platform,
+  TextInputSelectionChangeEventData,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import { AISettings, EditorSettings, FileItem } from '@app-types/index';
+import { AISettings, EditorSettings, FileItem, IoniconName } from '@app-types/index';
 import { darkTheme } from '@utils/theme';
 
 interface CodeEditorProps {
@@ -52,6 +54,8 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   const [aiFeedback, setAiFeedback] = useState('');
   const [aiSuggestion, setAiSuggestion] = useState('');
   const [isRunning, setIsRunning] = useState(false);
+  const largeFileThreshold = 120000;
+  const isLargeFile = content.length > largeFileThreshold;
 
   const cursorPosition = useMemo(() => {
     const textBeforeCursor = content.slice(0, selection.end);
@@ -102,13 +106,14 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   const replaceSelection = useCallback((text: string) => {
     const start = Math.min(selection.start, selection.end);
     const end = Math.max(selection.start, selection.end);
+    // Rebuilding the string is acceptable here because files above the 120k character warning threshold should be edited externally.
     const nextContent = `${content.slice(0, start)}${text}${content.slice(end)}`;
     onContentChange(nextContent);
     const nextCursor = start + text.length;
     setSelection({ start: nextCursor, end: nextCursor });
   }, [content, onContentChange, selection]);
 
-  const handleSelectionChange = useCallback((event: any) => {
+  const handleSelectionChange = useCallback((event: NativeSyntheticEvent<TextInputSelectionChangeEventData>) => {
     const { selection: nextSelection } = event.nativeEvent;
     if (nextSelection) {
       setSelection({
@@ -185,12 +190,12 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
     setAiSuggestion('');
   }, [aiSuggestion, replaceSelection]);
 
-  const getLanguageIcon = (language?: string): React.ComponentProps<typeof Ionicons>['name'] => {
-    const iconMap: Record<string, React.ComponentProps<typeof Ionicons>['name']> = {
+  const getLanguageIcon = (language?: string): IoniconName => {
+    const iconMap: Record<string, IoniconName> = {
       javascript: 'logo-javascript',
       typescript: 'code-slash',
       python: 'terminal',
-      java: 'cog',
+      java: 'cafe',
       cpp: 'code',
       html: 'code',
       css: 'brush',
@@ -271,6 +276,11 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
             <Text style={styles.aiButtonText}>Accept</Text>
           </TouchableOpacity>
         </View>
+        {isLargeFile && (
+          <Text style={[styles.largeFileWarning, { color: theme.colors.warning }]}>
+            Large files may edit more slowly on mobile.
+          </Text>
+        )}
         {!!aiSuggestion && (
           <View style={[styles.feedbackCard, { borderColor: theme.colors.border }]}>
             <Text style={[styles.feedbackLabel, { color: theme.colors.textSecondary }]}>Autocomplete</Text>
@@ -448,6 +458,10 @@ const styles = StyleSheet.create({
   },
   feedbackText: {
     fontSize: 13,
+  },
+  largeFileWarning: {
+    fontSize: 12,
+    fontWeight: '600',
   },
   editorContent: {
     flex: 1,

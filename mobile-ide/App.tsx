@@ -32,6 +32,7 @@ import { createFileItem } from '@utils/helpers';
 const Tab = createBottomTabNavigator();
 
 const defaultAppState = createDefaultAppState();
+const terminalLineDelayMs = 60;
 
 const delay = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -179,7 +180,7 @@ export default function App() {
         ...previous,
         history: [...previous.history, line],
       }));
-      await delay(120);
+      await delay(terminalLineDelayMs);
     }
   }, []);
 
@@ -314,7 +315,7 @@ export default function App() {
             <Tab.Navigator
               screenOptions={({ route }) => ({
                 tabBarIcon: ({ focused, color, size }) => {
-                  let iconName: React.ComponentProps<typeof Ionicons>['name'] = 'ellipsis-horizontal';
+                  let iconName: React.ComponentProps<typeof Ionicons>['name'];
 
                   switch (route.name) {
                     case 'Editor':
@@ -329,6 +330,8 @@ export default function App() {
                     case 'Settings':
                       iconName = focused ? 'settings' : 'settings-outline';
                       break;
+                    default:
+                      iconName = 'ellipsis-horizontal';
                   }
 
                   return <Ionicons name={iconName} size={size} color={color} />;

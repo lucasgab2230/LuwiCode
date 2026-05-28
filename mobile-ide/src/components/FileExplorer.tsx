@@ -59,7 +59,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
       javascript: 'logo-javascript',
       typescript: 'code-slash',
       python: 'terminal',
-      java: 'cog',
+      java: 'cafe',
       cpp: 'code',
       html: 'code',
       css: 'brush',
