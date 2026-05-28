@@ -5,13 +5,12 @@ import {
   TouchableOpacity,
   Text,
   StyleSheet,
-  Platform,
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { FileItem } from '@types/index';
+
+import { FileItem } from '@app-types/index';
 import { darkTheme } from '@utils/theme';
-import { createFileItem } from '@utils/helpers';
 
 interface FileExplorerProps {
   files: FileItem[];
@@ -29,30 +28,16 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
   theme = darkTheme,
 }) => {
   const [currentPath, setCurrentPath] = useState('/');
-  const [showNewFileModal, setShowNewFileModal] = useState(false);
   const [newFileName, setNewFileName] = useState('');
 
   const handleFilePress = useCallback((file: FileItem) => {
     if (file.type === 'directory') {
       setCurrentPath(file.path);
-    } else {
-      onFileSelect(file);
-    }
-  }, [onFileSelect]);
-
-  const handleCreateFile = useCallback(() => {
-    if (!newFileName.trim()) {
-      Alert.alert('Error', 'Please enter a file name');
       return;
     }
 
-    const isDirectory = newFileName.endsWith('/');
-    const name = isDirectory ? newFileName.slice(0, -1) : newFileName;
-    
-    onFileCreate?.(name, isDirectory ? 'directory' : 'file');
-    setNewFileName('');
-    setShowNewFileModal(false);
-  }, [newFileName, onFileCreate]);
+    onFileSelect(file);
+  }, [onFileSelect]);
 
   const handleDeleteFile = useCallback((file: FileItem) => {
     Alert.alert(
@@ -60,30 +45,26 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
       `Are you sure you want to delete "${file.name}"?`,
       [
         { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Delete', 
-          style: 'destructive',
-          onPress: () => onFileDelete?.(file)
-        },
+        { text: 'Delete', style: 'destructive', onPress: () => onFileDelete?.(file) },
       ]
     );
   }, [onFileDelete]);
 
-  const getFileIcon = (file: FileItem): string => {
+  const getFileIcon = (file: FileItem): React.ComponentProps<typeof Ionicons>['name'] => {
     if (file.type === 'directory') {
       return 'folder';
     }
 
-    const iconMap: Record<string, string> = {
+    const iconMap: Record<string, React.ComponentProps<typeof Ionicons>['name']> = {
       javascript: 'logo-javascript',
       typescript: 'code-slash',
       python: 'terminal',
-      java: 'coffee',
-      cpp: 'cog',
+      java: 'cafe',
+      cpp: 'code',
       html: 'code',
       css: 'brush',
       json: 'document-text',
-      markdown: 'document',
+      markdown: 'document-text',
       bash: 'terminal',
       plaintext: 'document-outline',
     };
@@ -132,7 +113,6 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      {/* Header */}
       <View style={[styles.header, { backgroundColor: theme.colors.surface, borderBottomColor: theme.colors.border }]}>
         <View style={styles.pathContainer}>
           <Ionicons name="folder-open" size={20} color={theme.colors.primary} />
@@ -142,13 +122,16 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
         </View>
         <TouchableOpacity
           style={[styles.createButton, { backgroundColor: theme.colors.primary }]}
-          onPress={() => setShowNewFileModal(true)}
+          onPress={() => {
+            const fileName = newFileName.trim() || `new-file-${files.length + 1}.ts`;
+            onFileCreate?.(fileName, 'file');
+            setNewFileName('');
+          }}
         >
           <Ionicons name="add" size={24} color={theme.colors.background} />
         </TouchableOpacity>
       </View>
 
-      {/* File List */}
       <FlatList
         data={files}
         renderItem={renderFileItem}
@@ -158,9 +141,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Ionicons name="folder-open-outline" size={64} color={theme.colors.textSecondary} />
-            <Text style={[styles.emptyText, { color: theme.colors.textSecondary }]}>
-              No files yet
-            </Text>
+            <Text style={[styles.emptyText, { color: theme.colors.textSecondary }]}>No files yet</Text>
             <Text style={[styles.emptySubtext, { color: theme.colors.textSecondary }]}>
               Create a new file to get started
             </Text>
@@ -168,7 +149,6 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
         }
       />
 
-      {/* Quick Actions */}
       <View style={[styles.quickActions, { backgroundColor: theme.colors.surface, borderTopColor: theme.colors.border }]}>
         <TouchableOpacity style={styles.quickAction}>
           <Ionicons name="document-text-outline" size={24} color={theme.colors.secondary} />
@@ -183,7 +163,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
           </Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.quickAction}>
-          <Ionicons name="upload-outline" size={24} color={theme.colors.secondary} />
+          <Ionicons name="download-outline" size={24} color={theme.colors.secondary} />
           <Text style={[styles.quickActionLabel, { color: theme.colors.textSecondary }]}>
             Import
           </Text>

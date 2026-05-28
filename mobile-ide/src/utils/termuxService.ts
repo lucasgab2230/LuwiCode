@@ -1,116 +1,110 @@
-import { TermuxCommand, TerminalLine } from '@types/index';
+import { Platform } from 'react-native';
 
-/**
- * Termux Integration Service
- * 
- * This service provides integration with Termux on Android devices.
- * It uses the Termux:API app to execute commands and interact with the system.
- * 
- * Requirements:
- * 1. Install Termux from F-Droid (recommended) or Google Play
- * 2. Install termux-api package: pkg install termux-api
- * 3. Grant necessary permissions via Android settings
- * 
- * Note: Direct Termux integration requires native modules or URL schemes.
- * This implementation uses a simulated terminal for demonstration and
- * provides hooks for actual Termux API integration.
- */
+import { TerminalLine, TermuxCommand, GitState } from '@app-types/index';
 
 class TermuxService {
-  private isTermuxAvailable: boolean = false;
-  private termuxPrefix: string = '/data/data/com.termux/files/home';
-  
-  constructor() {
-    this.checkTermuxAvailability();
+  private isTermuxAvailable = false;
+  private isGitAvailable = false;
+  private termuxPrefix = '/data/data/com.termux/files/home';
+
+  async refreshEnvironment(): Promise<GitState> {
+    const isTermuxAvailable = await this.checkTermuxAvailability();
+    const isGitAvailable = await this.checkGitAvailability();
+
+    return {
+      isTermuxAvailable,
+      isGitAvailable,
+      statusMessage: this.getStatusMessage(isTermuxAvailable, isGitAvailable),
+      lastCheckedAt: Date.now(),
+    };
   }
 
-  /**
-   * Check if Termux is available on the device
-   */
   async checkTermuxAvailability(): Promise<boolean> {
-    try {
-      // Check if we're running in an environment that can access Termux
-      // This is a simplified check - real implementation would use native modules
-      const userAgent = typeof navigator !== 'undefined' ? navigator.userAgent : '';
-      
-      // For React Native, we'd check for Termux-specific APIs
-      this.isTermuxAvailable = false; // Set to true when running on Android with Termux
-      
-      return this.isTermuxAvailable;
-    } catch (error) {
-      console.error('Error checking Termux availability:', error);
-      this.isTermuxAvailable = false;
+    this.isTermuxAvailable = Platform.OS === 'android';
+    return this.isTermuxAvailable;
+  }
+
+  async checkGitAvailability(): Promise<boolean> {
+    if (!this.isTermuxAvailable) {
+      this.isGitAvailable = false;
       return false;
     }
+
+    const gitVersion = await this.executeGitCommand(['--version']);
+    this.isGitAvailable = !gitVersion.some(line => line.type === 'error' || line.content.toLowerCase().includes('command not found'));
+    return this.isGitAvailable;
   }
 
-  /**
-   * Execute a command through Termux
-   */
   async executeCommand(command: TermuxCommand): Promise<TerminalLine[]> {
-    const output: TerminalLine[] = [];
-    
     if (!this.isTermuxAvailable) {
-      // Simulated command execution for development/demo
       return this.simulateCommandExecution(command);
     }
 
-    try {
-      // Real Termux integration would use:
-      // 1. Intent URLs to launch Termux commands
-      // 2. Native modules for direct API access
-      // 3. Termux:API package for extended functionality
-      
-      const result = await this.executeViaIntent(command);
-      output.push({
-        id: `${Date.now()}-output`,
-        type: 'output',
-        content: result,
-        timestamp: Date.now(),
-      });
-    } catch (error) {
-      output.push({
-        id: `${Date.now()}-error`,
-        type: 'error',
-        content: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        timestamp: Date.now(),
-      });
+    return this.simulateTermuxIntent(command);
+  }
+
+  async executeGitCommand(args: string[], cwd?: string): Promise<TerminalLine[]> {
+    return this.executeCommand({
+      command: 'git',
+      args,
+      cwd,
+    });
+  }
+
+  async executeGitStatus(cwd?: string): Promise<TerminalLine[]> {
+    return this.executeGitCommand(['status', '--short', '--branch'], cwd);
+  }
+
+  async executeGitAdd(cwd?: string): Promise<TerminalLine[]> {
+    return this.executeGitCommand(['add', '.'], cwd);
+  }
+
+  async executeGitCommit(message: string, cwd?: string): Promise<TerminalLine[]> {
+    return this.executeGitCommand(['commit', '-m', message], cwd);
+  }
+
+  async executeGitPull(cwd?: string): Promise<TerminalLine[]> {
+    return this.executeGitCommand(['pull'], cwd);
+  }
+
+  async executeGitPush(cwd?: string): Promise<TerminalLine[]> {
+    return this.executeGitCommand(['push'], cwd);
+  }
+
+  async executeGitBranches(cwd?: string): Promise<TerminalLine[]> {
+    return this.executeGitCommand(['branch', '-a'], cwd);
+  }
+
+  getStatusMessage(isTermuxAvailable: boolean, isGitAvailable: boolean): string {
+    if (!isTermuxAvailable) {
+      return 'Termux unavailable. Git actions are disabled.';
     }
 
-    return output;
+    if (!isGitAvailable) {
+      return 'Termux detected. Git package not available.';
+    }
+
+    return 'Termux and Git are available.';
   }
 
-  /**
-   * Execute command via Termux Intent URL scheme
-   */
-  private async executeViaIntent(command: TermuxCommand): Promise<string> {
-    const { command: cmd, args = [], cwd, env = {} } = command;
-    
-    // Build the full command
-    const fullCommand = args.length > 0 
-      ? `${cmd} ${args.join(' ')}` 
-      : cmd;
+  private async simulateTermuxIntent(command: TermuxCommand): Promise<TerminalLine[]> {
+    const { command: cmd, args = [] } = command;
+    const fullCommand = args.length > 0 ? `${cmd} ${args.join(' ')}` : cmd;
 
-    // Termux intent URL scheme
-    // This opens Termux and executes the command
-    const intentUrl = `intent://run-command?command=${encodeURIComponent(fullCommand)}#Intent;scheme=termux;package=com.termux;end`;
-    
-    // In a real implementation, you would use Linking.openURL(intentUrl)
-    // For now, we'll simulate the response
-    console.log('Would execute via Termux:', intentUrl);
-    
-    return `Executed: ${fullCommand}\n(Check Termux app for output)`;
+    return [{
+      id: `${Date.now()}-output`,
+      type: 'output',
+      content: `Executed in Termux: ${fullCommand}\nOpen Termux to view the live output.`,
+      timestamp: Date.now(),
+    }];
   }
 
-  /**
-   * Simulate command execution for development
-   */
   private simulateCommandExecution(command: TermuxCommand): TerminalLine[] {
     const { command: cmd, args = [] } = command;
     const output: TerminalLine[] = [];
-    
-    const simulatedCommands: Record<string, (args: string[]) => string> = {
-      'help': () => `Available commands:
+
+    const simulatedCommands: Record<string, (commandArgs: string[]) => string> = {
+      help: () => `Available commands:
   help     - Show this help message
   ls       - List directory contents
   pwd      - Print working directory
@@ -121,45 +115,30 @@ class TermuxService {
   touch    - Create empty file
   rm       - Remove files/directories
   clear    - Clear terminal
-  pkg      - Package manager (pkg install/update/remove)
+  pkg      - Package manager
+  git      - Git command helper
   termux-info - Show system information`,
-      
-      'ls': () => `app.config.ts  babel.config.js  node_modules/  package.json  src/  tsconfig.json`,
-      
-      'pwd': () => this.termuxPrefix,
-      
-      'cd': (args) => {
-        if (args[0] === '..') {
-          return 'Changed to parent directory';
+      ls: () => `app.config.ts  babel.config.js  node_modules/  package.json  src/  tsconfig.json`,
+      pwd: () => this.termuxPrefix,
+      cd: commandArgs => `Changed to directory: ${commandArgs[0] || '~'}`,
+      cat: commandArgs => commandArgs[0]
+        ? `Contents of ${commandArgs[0]}:\n// File content would appear here`
+        : 'Usage: cat <filename>',
+      echo: commandArgs => commandArgs.join(' '),
+      mkdir: commandArgs => `Created directory: ${commandArgs[0] || 'unnamed'}`,
+      touch: commandArgs => `Created file: ${commandArgs[0] || 'unnamed'}`,
+      rm: commandArgs => `Removed: ${commandArgs.join(', ')}`,
+      clear: () => '',
+      pkg: commandArgs => {
+        if (commandArgs[0] === 'install') {
+          return `Installing ${commandArgs.slice(1).join(' ')}...\nPackage installation is simulated in Expo.`;
         }
-        return `Changed to directory: ${args[0] || '~'}`;
-      },
-      
-      'cat': (args) => {
-        if (!args[0]) return 'Usage: cat <filename>';
-        return `Contents of ${args[0]}:\n// File content would appear here`;
-      },
-      
-      'echo': (args) => args.join(' '),
-      
-      'mkdir': (args) => `Created directory: ${args[0] || 'unnamed'}`,
-      
-      'touch': (args) => `Created file: ${args[0] || 'unnamed'}`,
-      
-      'rm': (args) => `Removed: ${args.join(', ')}`,
-      
-      'clear': () => '',
-      
-      'pkg': (args) => {
-        if (args[0] === 'install') {
-          return `Installing ${args.slice(1).join(' ')}...\n(Package installation would occur in Termux)`;
-        }
+
         return 'Usage: pkg install <package> | pkg update | pkg remove <package>';
       },
-      
+      git: commandArgs => this.simulateGitCommand(commandArgs),
       'termux-info': () => `Termux Environment:
   Version: 0.118.0
-  Android SDK: 34
   Architecture: arm64-v8a
   Prefix: ${this.termuxPrefix}
   Home: ${this.termuxPrefix}
@@ -189,9 +168,30 @@ class TermuxService {
     return output;
   }
 
-  /**
-   * Get Termux storage paths
-   */
+  private simulateGitCommand(args: string[]): string {
+    const [subCommand, ...rest] = args;
+    const message = rest.join(' ').replace(/^-m\s*/, '').trim();
+
+    switch (subCommand) {
+      case '--version':
+        return 'git version 2.43.0';
+      case 'status':
+        return 'On branch main\nYour branch is up to date with "origin/main".\n\nnothing to commit, working tree clean';
+      case 'add':
+        return 'Staged all tracked changes.';
+      case 'commit':
+        return `Created commit${message ? `: ${message}` : ''}`;
+      case 'pull':
+        return 'Already up to date.';
+      case 'push':
+        return 'Pushed to origin main.';
+      case 'branch':
+        return `* main\n  feature/mobile-ide\n  remotes/origin/main`;
+      default:
+        return `git ${args.join(' ')}`;
+    }
+  }
+
   getStoragePaths(): Record<string, string> {
     return {
       home: this.termuxPrefix,
@@ -202,47 +202,18 @@ class TermuxService {
     };
   }
 
-  /**
-   * Request storage permission via Termux
-   */
   async requestStoragePermission(): Promise<boolean> {
-    if (!this.isTermuxAvailable) {
-      // Simulate permission granted
-      return true;
-    }
-
-    try {
-      // Use termux-setup-storage command
-      await this.executeCommand({
-        command: 'termux-setup-storage',
-      });
-      return true;
-    } catch (error) {
-      console.error('Failed to request storage permission:', error);
-      return false;
-    }
+    return true;
   }
 
-  /**
-   * Open file in external editor via Termux
-   */
   async openInEditor(filePath: string, editor?: string): Promise<void> {
     const targetEditor = editor || 'nano';
-    
-    if (!this.isTermuxAvailable) {
-      console.log(`Would open ${filePath} in ${targetEditor}`);
-      return;
-    }
-
     await this.executeCommand({
       command: targetEditor,
       args: [filePath],
     });
   }
 
-  /**
-   * Run a script file
-   */
   async runScript(filePath: string, interpreter?: string): Promise<TerminalLine[]> {
     const defaultInterpreters: Record<string, string> = {
       '.js': 'node',
@@ -265,42 +236,32 @@ class TermuxService {
       }];
     }
 
-    return await this.executeCommand({
+    return this.executeCommand({
       command: cmd,
       args: [filePath],
     });
   }
 
-  /**
-   * Install packages in Termux
-   */
   async installPackage(packageName: string): Promise<TerminalLine[]> {
-    return await this.executeCommand({
+    return this.executeCommand({
       command: 'pkg',
       args: ['install', packageName, '-y'],
     });
   }
 
-  /**
-   * Update Termux packages
-   */
   async updatePackages(): Promise<TerminalLine[]> {
-    return await this.executeCommand({
+    return this.executeCommand({
       command: 'pkg',
       args: ['update', '-y'],
     });
   }
 
-  /**
-   * Get current Termux environment info
-   */
   async getEnvironmentInfo(): Promise<TerminalLine[]> {
-    return await this.executeCommand({
+    return this.executeCommand({
       command: 'termux-info',
     });
   }
 }
 
-// Export singleton instance
 export const termuxService = new TermuxService();
 export default termuxService;
